@@ -49,19 +49,22 @@ code {
   font-family: Consolas,"courier new";
   color: green;
   background-color: white;
+  display: block;
   padding: 2px;
   font-size: 105%;
   text-align:left;
   white-space: pre;
+  border: 1px dotted grey; 
+  border-radius: 8px;
 }
 
-span {
+/* span {
   display: block;
   padding: 5px;
   border: 1px dotted grey; 
   border-radius: 8px;
   background-color: white; 
-}
+} */
 
 /* pre {
   display: block;
