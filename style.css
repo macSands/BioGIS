@@ -46,6 +46,13 @@ background: #ffffff; /* white */
 padding: 20px;
 }
 
+#pre code {
+  background-color: #eee;
+  border: 1px solid #999;
+  display: block;
+  padding: 20px;
+}
+
 #logotop {
 float: center;
 background: #ffffff; /* white */
