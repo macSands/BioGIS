@@ -36,7 +36,6 @@ Fire is an important driver of landscape pattern, as different fire regimes dire
 <p><strong>Data import</strong>
 In addition to datasets available on Google Earth Engine, in this practical we will learn how to import shapefiles from your local hard-drive into GEE by uploading them as new assets (Fig. 1).</p>
 
-<br>
 <span>
 var dem = ee.Image("CGIAR/SRTM90_V4");
 var FireCCI = ee.ImageCollection('ESA/CCI/FireCCI/5_1');
@@ -49,7 +48,7 @@ var FireCCI = ee.ImageCollection('ESA/CCI/FireCCI/5_1');
 <p><strong>Filtering data</strong>
 First define your variables for the temporal and spatial windows of interest. We will use these variables to filter our data before processing.</p>
 
-<br><span>
+<span>
 var startDate = ee.Date.fromYMD(2001,1,1);
 var endDate = ee.Date.fromYMD(2018,12,31);
 var years = ee.List(fire.aggregate_array('year')).distinct().sort();
@@ -68,7 +67,7 @@ var fire = FireCCI
 <p><strong>Processing</strong>
 Now build a function to remove all burn scars from the fire dataset that have a confidence interval of less than 50%.</p>  
  
-<br><span>
+<span>
 // Define a function to remove all fires <50% confidence interval
 var confMask = function(img) {
   var conf = img.select('ConfidenceLevel');
@@ -79,7 +78,7 @@ var confMask = function(img) {
   
 <p>Run the function and summarise the burn scars by the day-of-year (doy) most frequently burnt, followed by the the frequency areas are burnt in Kruger annually from 2001 until 2018.</p>
 <p>
-<br><span>
+<span>
 // Most frequently burnt DOY
 var fireDOY_list = years.map(function(year) {
   return fire
