@@ -58,7 +58,7 @@ code {
 span {
   display: block;
   padding: 5px;
-  border: 1px solid grey;    
+  border: 0px;    
   background-color: white; 
 }
 
