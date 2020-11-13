@@ -86,22 +86,26 @@ var fireDOY_list = years.map(function(year) {
   return fire
     .filterMetadata('year', 'equals', year) // Filter image collection by year
     .map(confMask) // Apply confidence mask >50%
-    .reduce(ee.Reducer.mode()).rename('fire_doy') // Reduce image collection by most common DOY
+    .reduce(ee.Reducer.mode()).rename('fire_doy') 
+ // Reduce image collection by most common DOY
     .set('year', year) // Set composite year as an image property
     .set('system:time_start', ee.Date.fromYMD(year, 1, 1));
 });
-var doyFires = ee.ImageCollection.fromImages(fireDOY_list); // Convert the image List back to an ImageCollection
+var doyFires = ee.ImageCollection.fromImages(fireDOY_list); 
+// Convert the image List back to an ImageCollection
 
 // Frequency of days burnt
 var fireCnt_list = years.map(function(year) {
   return fire
     .filterMetadata('year', 'equals', year) // Filter image collection by year
     .map(confMask) // Apply confidence mask >50%
-    .reduce(ee.Reducer.countDistinct()) // Reduce image collection by count distinct doy
+    .reduce(ee.Reducer.countDistinct()) 
+ // Reduce image collection by count distinct doy
     .set('year', year) ));// Set composite year as an image property
     .set('system:time_start', ee.Date.fromYMD(year, 1, 1
 });
-var cntFiresDOY = ee.ImageCollection.fromImages(fireCnt_list); // Convert the image List back to an ImageCollection
+var cntFiresDOY = ee.ImageCollection.fromImages(fireCnt_list); 
+// Convert the image List back to an ImageCollection
 </code></span></p>  
   
 </div>
