@@ -31,15 +31,23 @@ By the end of this practical you should be able to:</p>
 </ol>
 <hr>
 <p><strong>Introduction</strong>
-Fire is an important driver of landscape pattern, as different fire regimes directly affect biomass production, composition and structure of vegetation. Indirectly, and together with other landscape features like geology, rainfall and topography, fire also influences animal distribution patterns. In savanna systems, interactions between herbivory, fire frequency, fire intensity and season can alter tree:grass ratios and system states. For example, in the Kruger National Park (Kruger) landscapes that are burnt frequently by high intensity fires generally have less woody cover than those burnt less frequently, at low intensities. Fire regime can also influence vegetation composition, where fire adapted species may dominate in frequently burnt areas, while those areas less frequently burnt may provide important refugia for more fire sensitive species (Smit et al. 2013). Fire is therefore an important component for biodiversity conservation planning but how do we find information about fire frequencies, intensities and seasons for our areas of interest if we haven’t monitored it directly? GEE has a number of different <a href="https://developers.google.com/earth-engine/datasets/tags/fire">datasets tagged &quot;fire&quot;</a>. We'll just be looking at one in this practical but I encourage you to explore the others in your own time. Let’s get started……</p>
+Fire is an important driver of landscape pattern, as different fire regimes directly affect biomass production, composition and structure of vegetation. 
+Indirectly, and together with other landscape features like geology, rainfall and topography, fire also influences animal distribution patterns. 
+In savanna systems, interactions between herbivory, fire frequency, fire intensity and season can alter tree:grass ratios and system states. 
+For example, in the Kruger National Park (Kruger) landscapes that are burnt frequently by high intensity fires generally have less woody cover than those 
+burnt less frequently, at low intensities. Fire regime can also influence vegetation composition, where fire adapted species may dominate in frequently burnt areas, 
+while those areas less frequently burnt may provide important refugia for more fire sensitive species (Smit et al. 2013). 
+Fire is therefore an important component for biodiversity conservation planning but how do we find information about fire frequencies, 
+intensities and seasons for our areas of interest if we haven’t monitored it directly? 
+ GEE has a number of different <a href="https://developers.google.com/earth-engine/datasets/tags/fire">datasets tagged &quot;fire&quot;</a>. 
+We'll just be looking at one in this practical but I encourage you to explore the others in your own time. Let’s get started……</p>
 <hr>
 <p><strong>Data import</strong>
-In addition to datasets available on Google Earth Engine, in this practical we will learn how to import shapefiles from your local hard-drive into GEE by uploading them as new assets (Fig. 1).</p>
+In addition to datasets available on Google Earth Engine, in this practical we will learn how to import shapefiles from your local hard-drive into GEE by 
+uploading them as new assets (Fig. 1).</p>
 
-<code>
-var dem = ee.Image("CGIAR/SRTM90_V4");
-var FireCCI = ee.ImageCollection('ESA/CCI/FireCCI/5_1');
-</code> 
+<span><code>var dem = ee.Image("CGIAR/SRTM90_V4");
+var FireCCI = ee.ImageCollection('ESA/CCI/FireCCI/5_1');</code></span>
   
 <p>The first dataset, <a href="https://developers.google.com/earth-engine/datasets/catalog/CGIAR_SRTM90_V4">SRTM90</a>, is a Digital Elevation Model (DEM) from the Shuttle Radar Topography Mission (SRTM). The second, <a href="https://developers.google.com/earth-engine/datasets/catalog/ESA_CCI_FireCCI_5_1">FireCCI51</a>, is a Fire_cci Burned Area pixel product version 5.1 from MODIS. Figure 1 below, describes how to import the boundary shapefile for the Kruger National Park (Kruger) from files stored locally on your hard-drive. You can download and save the required files from <a href="https://drive.google.com/file/d/1omD5vPk4LMQSnC2BHJCg6GlnmpzBsFQG/view?usp=sharing">here</a>.</p>
 <p><img src="/images/prac6_f1.png" alt="">
@@ -48,8 +56,7 @@ var FireCCI = ee.ImageCollection('ESA/CCI/FireCCI/5_1');
 <p><strong>Filtering data</strong>
 First define your variables for the temporal and spatial windows of interest. We will use these variables to filter our data before processing.</p>
 
-<span>
-var startDate = ee.Date.fromYMD(2001,1,1);
+<span><code>var startDate = ee.Date.fromYMD(2001,1,1);
 var endDate = ee.Date.fromYMD(2018,12,31);
 var years = ee.List(fire.aggregate_array('year')).distinct().sort();
 
@@ -61,25 +68,20 @@ var fire = FireCCI
     .filterDate(startDate, endDate)
     .map(function(img) { // This function adds year as property to each image
       return img.set('year', ee.Image(img).date().get('year'));
-    });
-</span></p>  
+  });</code></span></p>  
 <hr>
 <p><strong>Processing</strong>
 Now build a function to remove all burn scars from the fire dataset that have a confidence interval of less than 50%.</p>  
  
-<span>
-// Define a function to remove all fires <50% confidence interval
+<span><code>// Define a function to remove all fires <50% confidence interval
 var confMask = function(img) {
   var conf = img.select('ConfidenceLevel');
   var level = conf.gt(50);
-  return img.updateMask(level).select('BurnDate'); //return only 'BurnDate' band
-};
-</span></p>
+  return img.updateMask(level).select('BurnDate'); //return only 'BurnDate' band};</code></span></p>
   
 <p>Run the function and summarise the burn scars by the day-of-year (doy) most frequently burnt, followed by the the frequency areas are burnt in Kruger annually from 2001 until 2018.</p>
 <p>
-<span>
-// Most frequently burnt DOY
+<span><code>// Most frequently burnt DOY
 var fireDOY_list = years.map(function(year) {
   return fire
     .filterMetadata('year', 'equals', year) // Filter image collection by year
@@ -100,7 +102,7 @@ var fireCnt_list = years.map(function(year) {
     .set('system:time_start', ee.Date.fromYMD(year, 1, 1
 });
 var cntFiresDOY = ee.ImageCollection.fromImages(fireCnt_list); // Convert the image List back to an ImageCollection
-</span></p>  
+</code></span></p>  
   
 </div>
 
