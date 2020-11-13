@@ -55,12 +55,11 @@ code {
 
 span {
   display: block;
-  padding: 5px;
+  padding: 10px;
   border: 1px dotted grey; 
   border-radius: 8px;
   background-color: white; 
-  white-space: pre;
-  margin: 1em 0;
+  white-space: pre
 }
 
 /* pre {
