@@ -54,6 +54,8 @@ code {
 }
 
 span {
+  font-family: Consolas,"courier new";
+  color: green;
   display: block;
   padding: 10px;
   border: 1px dotted grey; 
