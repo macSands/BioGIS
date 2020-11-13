@@ -1,1 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../style.css" />
+<title>Google Earth Engine for Ecology and Conservation</title>
+</head>
 
+<body>
+
+<div id="wrap">
+<div id="header">
+<h1>GOOGLE EARTH ENGINE APPLICATIONS</h1>
+<h1>IN ECOLOGY AND CONSERVATION</h1>
+</div>
+
+<div id="content">
+<h2>GOOGLE EARTH ENGINE FOR IN ECOLOGY AND CONSERVATION</h2>
+<h3>PRACTICAL 6</h3>
+<p><strong>Practical 6: Fire frequency in the Kruger National Park, South Africa</strong></p>
+<p>Access the completed practical script <a href="https://code.earthengine.google.com/63ca391e02cb163916a03a2c45200359?noload=true">here</a>
+Also please download the following shapefile delineating <a href="https://drive.google.com/file/d/1Acs8PLINsehpsZvDj-g9BnAkLuVYKVv3/view?usp=sharing">regional boundaries</a> in Kruger.</p>
+<p><strong>Learning Objectives</strong>
+By the end of this practical you should be able to:</p>
+<ol>
+<li>Access terrain model data from SRTM</li>
+<li>Access monthly burn scar data</li>
+<li>Generate a hillshade using SRTM data</li>
+<li>Explore long-term patterns of fire frequency</li>
+<li>Build an animation and output for use in, for example, PowerPoint presentations</li>
+</ol>
+<hr>
+<p><strong>Introduction</strong>
+Fire is an important driver of landscape pattern, as different fire regimes directly affect biomass production, composition and structure of vegetation. Indirectly, and together with other landscape features like geology, rainfall and topography, fire also influences animal distribution patterns. In savanna systems, interactions between herbivory, fire frequency, fire intensity and season can alter tree:grass ratios and system states. For example, in the Kruger National Park (Kruger) landscapes that are burnt frequently by high intensity fires generally have less woody cover than those burnt less frequently, at low intensities. Fire regime can also influence vegetation composition, where fire adapted species may dominate in frequently burnt areas, while those areas less frequently burnt may provide important refugia for more fire sensitive species (Smit et al. 2013). Fire is therefore an important component for biodiversity conservation planning but how do we find information about fire frequencies, intensities and seasons for our areas of interest if we haven’t monitored it directly? GEE has a number of different <a href="https://developers.google.com/earth-engine/datasets/tags/fire">datasets tagged &quot;fire&quot;</a>. We'll just be looking at one in this practical but I encourage you to explore the others in your own time. Let’s get started……</p>
+<hr>
+<p><strong>Data import</strong>
+In addition to datasets available on Google Earth Engine, in this practical we will learn how to import shapefiles from your local hard-drive into GEE by uploading them as new assets (Fig. 1).</p>
+<pre class="hljs language-js"><code><span class="hljs-keyword">var</span> dem = ee.Image(<span class="hljs-string">&quot;CGIAR/SRTM90_V4&quot;</span>);
+<span class="hljs-keyword">var</span> FireCCI = ee.ImageCollection(<span class="hljs-string">&#x27;ESA/CCI/FireCCI/5_1&#x27;</span>);
+</code></pre>
+<p>The first dataset, <a href="https://developers.google.com/earth-engine/datasets/catalog/CGIAR_SRTM90_V4">SRTM90</a>, is a Digital Elevation Model (DEM) from the Shuttle Radar Topography Mission (SRTM). The second, <a href="https://developers.google.com/earth-engine/datasets/catalog/ESA_CCI_FireCCI_5_1">FireCCI51</a>, is a Fire_cci Burned Area pixel product version 5.1 from MODIS. Figure 1 below, describes how to import the boundary shapefile for the Kruger National Park (Kruger) from files stored locally on your hard-drive. You can download and save the required files from <a href="https://drive.google.com/file/d/1omD5vPk4LMQSnC2BHJCg6GlnmpzBsFQG/view?usp=sharing">here</a>.</p>
+<p><img src="/images/prac6_f1.png" alt="">
+<strong>Figure 1:</strong> Process to upload a shapefile into GEE as a new assest imported into the script as a FeatureColection</p>
+<hr>
+<p><strong>Filtering data</strong>
+First define your variables for the temporal and spatial windows of interest. We will use these variables to filter our data before processing.</p>
+<pre class="hljs language-js"><code><span class="hljs-keyword">var</span> startDate = ee.Date.fromYMD(<span class="hljs-number">2001</span>,<span class="hljs-number">1</span>,<span class="hljs-number">1</span>);
+<span class="hljs-keyword">var</span> endDate = ee.Date.fromYMD(<span class="hljs-number">2018</span>,<span class="hljs-number">12</span>,<span class="hljs-number">31</span>);
+<span class="hljs-keyword">var</span> years = ee.List(fire.aggregate_array(<span class="hljs-string">&#x27;year&#x27;</span>)).distinct().sort();
+
+<span class="hljs-keyword">var</span> knp_geo = knp.geometry();
+
+<span class="hljs-keyword">var</span> srtm = dem.clipToCollection(knp);
+
+<span class="hljs-keyword">var</span> fire = FireCCI
+    .filterBounds(knp_geo)
+    .filterDate(startDate, endDate)
+    .map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">img</span>) </span>{ <span class="hljs-comment">// This function adds year as property to each image</span>
+      <span class="hljs-keyword">return</span> img.set(<span class="hljs-string">&#x27;year&#x27;</span>, ee.Image(img).date().get(<span class="hljs-string">&#x27;year&#x27;</span>));
+    });
+</code></pre>
+<hr>
+<p><strong>Processing</strong>
+Now build a function to remove all burn scars from the fire dataset that have a confidence interval of less than 50%.</p>
+<pre class="hljs language-js"><code><span class="hljs-comment">// Define a function to remove all fires &lt;50% confidence interval</span>
+<span class="hljs-keyword">var</span> confMask = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">img</span>) </span>{
+  <span class="hljs-keyword">var</span> conf = img.select(<span class="hljs-string">&#x27;ConfidenceLevel&#x27;</span>);
+  <span class="hljs-keyword">var</span> level = conf.gt(<span class="hljs-number">50</span>);
+  <span class="hljs-keyword">return</span> img.updateMask(level).select(<span class="hljs-string">&#x27;BurnDate&#x27;</span>); <span class="hljs-comment">//return only &#x27;BurnDate&#x27; band</span>
+};
+</code></pre>
+<p>Run the function and summarise the burn scars by the day-of-year (doy) most frequently burnt, followed by the the frequency areas are burnt in Kruger annually from 2001 until 2018.</p>
+<pre class="hljs language-js"><code><span class="hljs-comment">// Most frequently burnt DOY</span>
+<span class="hljs-keyword">var</span> fireDOY_list = years.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">year</span>) </span>{
+  <span class="hljs-keyword">return</span> fire
+    .filterMetadata(<span class="hljs-string">&#x27;year&#x27;</span>, <span class="hljs-string">&#x27;equals&#x27;</span>, year) <span class="hljs-comment">// Filter image collection by year</span>
+    .map(confMask) <span class="hljs-comment">// Apply confidence mask &gt;50%</span>
+    .reduce(ee.Reducer.mode()).rename(<span class="hljs-string">&#x27;fire_doy&#x27;</span>) <span class="hljs-comment">// Reduce image collection by most common DOY</span>
+    .set(<span class="hljs-string">&#x27;year&#x27;</span>, year) <span class="hljs-comment">// Set composite year as an image property</span>
+    .set(<span class="hljs-string">&#x27;system:time_start&#x27;</span>, ee.Date.fromYMD(year, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>));
+});
+<span class="hljs-keyword">var</span> doyFires = ee.ImageCollection.fromImages(fireDOY_list); <span class="hljs-comment">// Convert the image List back to an ImageCollection</span>
+
+<span class="hljs-comment">// Frequency of days burnt</span>
+<span class="hljs-keyword">var</span> fireCnt_list = years.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">year</span>) </span>{
+  <span class="hljs-keyword">return</span> fire
+    .filterMetadata(<span class="hljs-string">&#x27;year&#x27;</span>, <span class="hljs-string">&#x27;equals&#x27;</span>, year) <span class="hljs-comment">// Filter image collection by year</span>
+    .map(confMask) <span class="hljs-comment">// Apply confidence mask &gt;50%</span>
+    .reduce(ee.Reducer.countDistinct()) <span class="hljs-comment">// Reduce image collection by count distinct doy</span>
+    .set(<span class="hljs-string">&#x27;year&#x27;</span>, year) ));<span class="hljs-comment">// Set composite year as an image property</span>
+    .set(<span class="hljs-string">&#x27;system:time_start&#x27;</span>, ee.Date.fromYMD(year, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>
+});
+<span class="hljs-keyword">var</span> cntFiresDOY = ee.ImageCollection.fromImages(fireCnt_list); <span class="hljs-comment">// Convert the image List back to an ImageCollection</span>
+</code></pre>
+<p>Summarise these results to represent the most frequently burnt day-of-year (doy) and the frequency areas have burnt in Kruger over the last 18 years (2001-2018).</p>
+<pre class="hljs language-js"><code><span class="hljs-keyword">var</span> modFires = doyFires.mode().clip(knp_geo);
+<span class="hljs-keyword">var</span> cntFires = cntFiresDOY.sum().clip(knp_geo);
+</code></pre>
+<hr>
+<p><strong>Charting</strong>
+To plot these results, first define your chart parameters (e.g. title and axis labels), then create the line chart, incorporating these pre-defined chart parameters and <code>print</code> it to the console as follows:</p>
+<pre class="hljs language-js"><code><span class="hljs-comment">// Chart parameters</span>
+<span class="hljs-keyword">var</span> opt_cntFireMonth = {
+  <span class="hljs-attr">title</span>: <span class="hljs-string">&#x27;Monthly fire frequencies: Kruger National Park 2001 to 2018&#x27;</span>,
+  <span class="hljs-attr">pointSize</span>: <span class="hljs-number">3</span>,
+  <span class="hljs-attr">hAxis</span>: {<span class="hljs-attr">title</span>: <span class="hljs-string">&#x27;Year&#x27;</span>},
+  <span class="hljs-attr">vAxis</span>: {<span class="hljs-attr">title</span>: <span class="hljs-string">&#x27;Number of fires&#x27;</span>},
+};
+
+<span class="hljs-comment">// Plot day count of monthly fires</span>
+<span class="hljs-keyword">var</span> cntFireMonth_chart = ui.Chart.image.series({ <span class="hljs-comment">// ui.Chart.image.byRegion</span>
+  <span class="hljs-attr">imageCollection</span>: fire.select(<span class="hljs-string">&#x27;BurnDate&#x27;</span>),
+  <span class="hljs-attr">region</span>: knp_geo,
+  <span class="hljs-attr">reducer</span>: ee.Reducer.countDistinct(),
+  <span class="hljs-attr">scale</span>: <span class="hljs-number">250</span>
+}).setOptions(opt_cntFireMonth).setChartType(<span class="hljs-string">&#x27;LineChart&#x27;</span>);
+print(cntFireMonth_chart);
+</code></pre>
+<p><img src="/images/prac6_f2a.png" alt="">
+<strong>Figure 2:</strong> Line chart the number of days a fire occured in Kruger from 2001 to 2018.</p>
+<hr>
+<p><strong>Visualisation</strong>
+To visualise the long-term summaries of your results, first setup your map elements as you've done in previous practicals.</p>
+<pre class="hljs language-js"><code><span class="hljs-comment">// Define legend parameters for unique DOY</span>
+<span class="hljs-comment">// Light colours are earlier in the year, dark colours are later</span>
+<span class="hljs-keyword">var</span> visDOY = {
+    <span class="hljs-attr">min</span>:<span class="hljs-number">1</span>, <span class="hljs-attr">max</span>:<span class="hljs-number">366</span>, 
+    <span class="hljs-attr">palette</span>:[<span class="hljs-string">&#x27;eef5b7&#x27;</span>,<span class="hljs-string">&#x27;99f74f&#x27;</span>,<span class="hljs-string">&#x27;4ff7b0&#x27;</span>,<span class="hljs-string">&#x27;4fc2f7&#x27;</span>,
+    <span class="hljs-string">&#x27;3940db&#x27;</span>,<span class="hljs-string">&#x27;7239db&#x27;</span>,<span class="hljs-string">&#x27;db39db&#x27;</span>,<span class="hljs-string">&#x27;db395c&#x27;</span>,<span class="hljs-string">&#x27;7c1229&#x27;</span>]};
+
+<span class="hljs-comment">// Define a legend for fire frequency</span>
+<span class="hljs-comment">// Light colours are areas that burn less frequently, </span>
+<span class="hljs-comment">// dark colours are areas that burn often</span>
+<span class="hljs-keyword">var</span> visCnt = {
+    <span class="hljs-attr">min</span>:<span class="hljs-number">1</span>, <span class="hljs-attr">max</span>:<span class="hljs-number">12</span>, 
+    <span class="hljs-attr">palette</span>:[<span class="hljs-string">&#x27;eef5b7&#x27;</span>,<span class="hljs-string">&#x27;99f74f&#x27;</span>,<span class="hljs-string">&#x27;4ff7b0&#x27;</span>,<span class="hljs-string">&#x27;4fc2f7&#x27;</span>,<span class="hljs-string">&#x27;3940db&#x27;</span>,
+             <span class="hljs-string">&#x27;7239db&#x27;</span>,<span class="hljs-string">&#x27;db39db&#x27;</span>,<span class="hljs-string">&#x27;db395c&#x27;</span>,<span class="hljs-string">&#x27;7c1229&#x27;</span>]};
+
+<span class="hljs-built_in">Map</span>.centerObject(knp, <span class="hljs-number">7</span>);
+<span class="hljs-built_in">Map</span>.addLayer(modFires, visDOY, <span class="hljs-string">&#x27;Most frequently burnt day in Kruger (2001-2018)&#x27;</span>,<span class="hljs-literal">true</span>, <span class="hljs-number">0.8</span>)
+<span class="hljs-built_in">Map</span>.addLayer(cntFires, visCnt, <span class="hljs-string">&#x27;Fire frequency: Kruger Park (2001-2018)&#x27;</span>,<span class="hljs-literal">true</span>, <span class="hljs-number">0.8</span>)
+<span class="hljs-built_in">Map</span>.addLayer(knp,{<span class="hljs-attr">color</span>: <span class="hljs-string">&#x27;grey&#x27;</span>}, <span class="hljs-string">&#x27;Kruger&#x27;</span>,<span class="hljs-literal">true</span>, <span class="hljs-number">0.8</span>);  <span class="hljs-comment">// Add Kruger boundary</span>
+</code></pre>
+<p><img src="/images/prac6_f3.png" alt="">
+<strong>Figure 3:</strong> Map with layers indicating the most frequently burnt doy-of-year (doy) and the fire requency in Kruger from 2001 to 2018.</p>
+<hr>
+<p><strong>Hillshade and Animation</strong></p>
+<pre class="hljs language-js"><code><span class="hljs-comment">//display hillshading and slope</span>
+<span class="hljs-keyword">var</span> hillshade = ee.Terrain.hillshade(dem);
+<span class="hljs-comment">// print(&#x27;Check hillshade&#x27;,hillshade);</span>
+
+<span class="hljs-comment">// Set the clipped SRTM image as background</span>
+<span class="hljs-keyword">var</span> srtmVis = hillshade.visualize(srtmParams);
+
+<span class="hljs-comment">// Define GIF visualization parameters</span>
+<span class="hljs-keyword">var</span> gifParams = {
+  <span class="hljs-string">&#x27;region&#x27;</span>: knp_geo,
+  <span class="hljs-string">&#x27;dimensions&#x27;</span>: <span class="hljs-number">500</span>,
+  <span class="hljs-string">&#x27;crs&#x27;</span>: <span class="hljs-string">&#x27;EPSG:3857&#x27;</span>, <span class="hljs-comment">// Check projection</span>
+  <span class="hljs-string">&#x27;framesPerSecond&#x27;</span>: <span class="hljs-number">1</span>
+};
+
+<span class="hljs-comment">// Define the hillshade background legend parameters</span>
+<span class="hljs-keyword">var</span> srtmParams = {
+  <span class="hljs-attr">min</span>: <span class="hljs-number">120</span>, <span class="hljs-comment">// Elevation min 100</span>
+  <span class="hljs-attr">max</span>: <span class="hljs-number">200</span>, <span class="hljs-comment">// Elevation max 840</span>
+  <span class="hljs-attr">gamma</span>: <span class="hljs-number">1</span>,
+};
+
+<span class="hljs-comment">// Create RGB visualization images for use as animation frames.</span>
+<span class="hljs-keyword">var</span> srtmFires = doyFires.map(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">img</span>) </span>{
+  <span class="hljs-keyword">return</span> srtmVis
+        .paint(knp, <span class="hljs-string">&#x27;grey&#x27;</span>, <span class="hljs-number">1</span>) <span class="hljs-comment">// Add KNP boundary</span>
+        .blend(img.visualize(visDOY).clipToCollection(knp)); <span class="hljs-comment">// Blend hillshade with knp and clip</span>
+});
+
+<span class="hljs-comment">// Print the GIF URL to the console</span>
+<span class="hljs-keyword">var</span> myGIF = srtmFires.getVideoThumbURL(gifParams);
+print(myGIF);
+
+<span class="hljs-comment">// Render the GIF animation in the console</span>
+print(ui.Thumbnail({
+  <span class="hljs-attr">image</span>: srtmFires,
+  <span class="hljs-attr">params</span>: gifParams,
+  <span class="hljs-attr">style</span>: {
+    <span class="hljs-attr">position</span>: <span class="hljs-string">&#x27;bottom-right&#x27;</span>,
+    <span class="hljs-attr">width</span>: <span class="hljs-string">&#x27;180px&#x27;</span>
+  }}));
+
+<span class="hljs-comment">// Or add it to your map</span>
+<span class="hljs-comment">// Create a video thumbnail and add it to the map.</span>
+<span class="hljs-keyword">var</span> thumb = ui.Thumbnail({
+  <span class="hljs-comment">// Specifying a collection for &quot;image&quot; animates the sequence of images.</span>
+  <span class="hljs-attr">image</span>: srtmFires,
+  <span class="hljs-attr">params</span>: gifParams,
+  <span class="hljs-attr">style</span>: {
+    <span class="hljs-attr">position</span>: <span class="hljs-string">&#x27;bottom-right&#x27;</span>,
+    <span class="hljs-attr">width</span>: <span class="hljs-string">&#x27;180px&#x27;</span>
+  }});
+<span class="hljs-built_in">Map</span>.add(thumb);
+</code></pre>
+<p><img src="/images/prac6_f4.gif" alt="">
+<strong>Figure 4:</strong> Animation of days fires occurred in Kruger from 2001 to 2018. Light colours represent fires that happened earlier in the year, while dark colours are those that burnt in later months.</p>
+<hr>
+<p><strong>Data Export</strong>
+To export the animation, simply right mouse-click and select <code>Save Image As…</code> to save the animation locally as a .GIF file to your hard-drive.</p>
+<p>As a last step is always &quot;save your script&quot;.</p>
+<hr>
+<p><strong>Practical 6 Exercise</strong>
+Repeat this practical but for an area that interests you, instead of the Kruger National Park.
+To share your script, click on Get Link and then copy script path. Send your completed script to <a href="mailto:ots.online.education@gmail.com">ots.online.education@gmail.com</a>.</p>
+<p>Do you have any feedback for this practical? Please complete this quick (2-5 min) survey <a href="https://forms.gle/hT11ReQpvG2oLDxF7">here</a>.</p>
+<hr>
+<p><strong>References</strong>
+Smit IPJ, Smit CF, Govender N, van der Linde M and MacFadyen S (2013) Rainfall, geology and landscape position generate large-scale spatiotemporal fire pattern heterogeneity in an African savanna. Ecography 36(4): 447-459</p>
+</div>
+
+<div id="sidebar">
+<h3>MENU</h3>
+<ul>
+<li><a href="../index.html">HOME</a></li>
+<li><a href="1_instructions.html">TUTORIAL 1</a></li>
+<li><a href="2_documents.html">TUTORIAL 2</a></li>
+<li><a href="3_contact.html">TUTORIAL 3</a></li>
+<li class="selected"><a href="4_prac.html">TUTORIAL 4</a></li>
+<li><a href="5_prac.html">TUTORIAL 5</a></li>
+<li><a href="6_prac.html">TUTORIAL 6</a></li>
+<li><a href="7_prac.html">TUTORIAL 7</a></li>
+<li><a href="8_prac.html">TUTORIAL 8</a></li>
+<li><a href="9_prac.html">TUTORIAL 9</a></li>
+</ul>
+
+<h3></h3>
+</div>
+
+<div style="clear: both;"> </div>
+<ul style="text-align:center; padding: 0px 0px 0px 0px;background: #ffffff;"><img src="img/logo_all.png" align="middle" width="800" height="123" alt="" title=""/></ul>	
+
+<div id="footer">
+<p>&copy; Copyright 2019 BioGIS | Designed by <a href="http://www.biogis.co.za" target="_blank">BioGIS</a></p>
+</div>
+
+</div>
+
+</body>
+</html>
