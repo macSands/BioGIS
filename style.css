@@ -45,7 +45,7 @@ background: #ffffff; /* white */
 padding: 20px;
 }
 
-code {
+/* code {
   font-family: Consolas,"courier new";
   color: green;
   background-color: white;
@@ -56,15 +56,16 @@ code {
   white-space: pre;
   border: 1px dotted grey; 
   border-radius: 8px;
-}
+} */
 
-/* span {
+span {
   display: block;
   padding: 5px;
   border: 1px dotted grey; 
   border-radius: 8px;
   background-color: white; 
-} */
+  white-space: pre;
+}
 
 /* pre {
   display: block;
