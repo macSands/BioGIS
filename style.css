@@ -45,18 +45,13 @@ background: #ffffff; /* white */
 padding: 20px;
 }
 
-/* code {
+code {
   font-family: Consolas,"courier new";
   color: green;
-  background-color: white;
-  display: block;
   padding: 2px;
   font-size: 105%;
   text-align:left;
-  white-space: pre;
-  border: 1px dotted grey; 
-  border-radius: 8px;
-} */
+}
 
 span {
   display: block;
