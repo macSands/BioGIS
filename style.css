@@ -59,7 +59,8 @@ code {
 span {
   display: block;
   padding: 5px;
-  border: 1px dotted grey;    
+  border: 1px dotted grey; 
+  border-radius: 8px;
   background-color: white; 
 }
 
