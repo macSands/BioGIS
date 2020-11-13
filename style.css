@@ -53,6 +53,7 @@ code {
   padding: 2px;
   font-size: 105%;
   text-align:left;
+  white-space: pre;
 }
 
 span {
@@ -62,12 +63,12 @@ span {
   background-color: white; 
 }
 
-pre code {
-  background-color: #eee;
-  border: 1px solid #999;
+/* pre {
   display: block;
-  padding: 20px;
-}
+  font-family: monospace;
+  white-space: pre;
+  margin: 1em 0;
+} */
 
 #logotop {
 float: center;
