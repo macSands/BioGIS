@@ -35,12 +35,11 @@ Fire is an important driver of landscape pattern, as different fire regimes dire
 <hr>
 <p><strong>Data import</strong>
 In addition to datasets available on Google Earth Engine, in this practical we will learn how to import shapefiles from your local hard-drive into GEE by uploading them as new assets (Fig. 1).</p>
-<span>
+
 <code>
 var dem = ee.Image("CGIAR/SRTM90_V4");
 var FireCCI = ee.ImageCollection('ESA/CCI/FireCCI/5_1');
 </code> 
-</span>
   
 <p>The first dataset, <a href="https://developers.google.com/earth-engine/datasets/catalog/CGIAR_SRTM90_V4">SRTM90</a>, is a Digital Elevation Model (DEM) from the Shuttle Radar Topography Mission (SRTM). The second, <a href="https://developers.google.com/earth-engine/datasets/catalog/ESA_CCI_FireCCI_5_1">FireCCI51</a>, is a Fire_cci Burned Area pixel product version 5.1 from MODIS. Figure 1 below, describes how to import the boundary shapefile for the Kruger National Park (Kruger) from files stored locally on your hard-drive. You can download and save the required files from <a href="https://drive.google.com/file/d/1omD5vPk4LMQSnC2BHJCg6GlnmpzBsFQG/view?usp=sharing">here</a>.</p>
 <p><img src="/images/prac6_f1.png" alt="">
@@ -48,7 +47,7 @@ var FireCCI = ee.ImageCollection('ESA/CCI/FireCCI/5_1');
 <hr>
 <p><strong>Filtering data</strong>
 First define your variables for the temporal and spatial windows of interest. We will use these variables to filter our data before processing.</p>
-<span>
+
 <code>
 var startDate = ee.Date.fromYMD(2001,1,1);
 var endDate = ee.Date.fromYMD(2018,12,31);
@@ -63,13 +62,11 @@ var fire = FireCCI
     .map(function(img) { // This function adds year as property to each image
       return img.set('year', ee.Image(img).date().get('year'));
     });
-</span></p>  
+</code></p>  
 <hr>
 <p><strong>Processing</strong>
 Now build a function to remove all burn scars from the fire dataset that have a confidence interval of less than 50%.</p>  
  
-  
-<span>
 <code>
 // Define a function to remove all fires <50% confidence interval
 var confMask = function(img) {
@@ -77,12 +74,10 @@ var confMask = function(img) {
   var level = conf.gt(50);
   return img.updateMask(level).select('BurnDate'); //return only 'BurnDate' band
 };
-</code>  
-</span></p>
+</code></p>
   
 <p>Run the function and summarise the burn scars by the day-of-year (doy) most frequently burnt, followed by the the frequency areas are burnt in Kruger annually from 2001 until 2018.</p>
 <p>
-<span>
 <code>
 // Most frequently burnt DOY
 var fireDOY_list = years.map(function(year) {
@@ -106,7 +101,7 @@ var fireCnt_list = years.map(function(year) {
 });
 var cntFiresDOY = ee.ImageCollection.fromImages(fireCnt_list); // Convert the image List back to an ImageCollection
 </code>  
-</span></p>  
+</p>  
   
 </div>
 
