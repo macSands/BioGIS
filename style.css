@@ -60,6 +60,7 @@ span {
   border-radius: 8px;
   background-color: white; 
   white-space: pre;
+  margin: 1em 0;
 }
 
 /* pre {
