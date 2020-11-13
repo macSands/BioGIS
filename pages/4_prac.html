@@ -50,6 +50,13 @@ Rainfall plays a central role in a myriad of natural processes, including river 
 The datasets we will use for this practical are all available on Google Earth Engine and can be accessed as follows (You can convert these to an import record, using `convert` from the pop-up message):
 <p>The HTML <code>button</code> tag defines a clickable button.</p>
 <p>The CSS <code>background-color</code> property defines the background color of an element.</p>
+  
+<span>
+<code>var Countries = ee.FeatureCollection('USDOS/LSIB/2017');
+var WDPA = ee.FeatureCollection('WCMC/WDPA/current/polygons');
+var CHIRPS = ee.ImageCollection("UCSB-CHG/CHIRPS/PENTAD");
+var MOD13Q1 = ee.ImageCollection("MODIS/006/MOD13Q1");
+</span>
 </div>
 
 <div id="sidebar">
@@ -71,7 +78,7 @@ The datasets we will use for this practical are all available on Google Earth En
 </div>
 
 <div style="clear: both;"> </div>
-<ul style="text-align:center; padding: 0px 0px 0px 0px;background: #ffffff;"><img src="pages/img/logo_all.png" align="middle" width="800" height="123" alt="" title=""/></ul>	
+<ul style="text-align:center; padding: 0px 0px 0px 0px;background: #ffffff;"><img src="img/logo_all.png" align="middle" width="800" height="123" alt="" title=""/></ul>	
 
 <div id="footer">
 <p>&copy; Copyright 2019 BioGIS | Designed by <a href="http://www.biogis.co.za" target="_blank">BioGIS</a></p>
